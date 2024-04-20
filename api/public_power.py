@@ -50,11 +50,15 @@ def process_production_data(production_data, timestamps):
     return pd.concat(df_list, ignore_index=True)
 
 def get_public_power(start_date, end_date):
-    url = base_url +'public_power'
+    """ Retrieve public power production data between specified start and end dates. """
+    start_datetime = datetime.fromisoformat(start_date).strftime('%Y-%m-%dT%H:%M:%S%z')
+    end_datetime = datetime.fromisoformat(end_date).strftime('%Y-%m-%dT%H:%M:%S%z')
+
+    url = base_url + 'public_power'
     params = {
         'country': country_code,
-        'start': start_date,
-        'end': end_date
+        'start': start_datetime,
+        'end': end_datetime
     }
 
     data = fetch_data(url, params)
