@@ -3,13 +3,16 @@ import pandas as pd
 from datetime import datetime
 from util import base_url, country_code, process_timestamps
 
-import requests
-import pandas as pd
-from datetime import datetime
-from util import base_url, country_code, process_timestamps
+cache = {}
 
 def get_public_power(start_date, end_date):
     """Fetch and process public power production data within the specified date range."""
+    cache_key = (start_date, end_date)
+
+    if cache_key in cache:
+        print("Using cached data")
+        return cache[cache_key]
+
     start_datetime = datetime.fromisoformat(start_date).strftime('%Y-%m-%dT%H:%M:%S%z')
     end_datetime = datetime.fromisoformat(end_date).strftime('%Y-%m-%dT%H:%M:%S%z')
     url = base_url + 'public_power'
@@ -56,4 +59,7 @@ def get_public_power(start_date, end_date):
         hydro_data['Production Type'] = 'Hydro'
         df_list.append(hydro_data)
 
-    return pd.concat(df_list, ignore_index=True)
+    final_df = pd.concat(df_list, ignore_index=True)
+
+    cache[cache_key] = final_df
+    return final_df

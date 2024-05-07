@@ -25,3 +25,20 @@ def create_elec_prod_pie_chart(start_date, end_date):
                  title='Pie Chart: Total Energy Production by Type',
                  labels={'Production Type': 'Production Type', 'Power (MW)': 'Total Power in MW'})
     return dcc.Graph(figure=fig,  style={'width': '100%'})
+
+def create_elec_prod_heatmap(start_date, end_date):
+    df = get_public_power(start_date, end_date)
+
+    heatmap_data = df.pivot_table(index='Production Type', columns='Time', values='Power (MW)', aggfunc='sum')
+
+    fig = px.imshow(heatmap_data,
+                    labels=dict(x="Time of Day", y="Production Type", color="Power in MW"),
+                    x=heatmap_data.columns,
+                    y=heatmap_data.index,
+                    title="Heatmap: Energy Production Intensity Over Time",
+                    aspect="auto")
+
+    fig.update_xaxes(side="top")
+    fig.update_layout(xaxis_nticks=20)
+
+    return dcc.Graph(figure=fig, style={'width': '100%'})

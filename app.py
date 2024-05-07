@@ -2,7 +2,7 @@ from dash import Dash, html, dcc, Input, Output, callback, ctx
 import dash_bootstrap_components as dbc
 from datetime import datetime, date, timedelta
 import os
-from charts import create_elec_prod_bar_chart, create_elec_prod_line_chart, create_elec_prod_pie_chart
+from charts import create_elec_prod_bar_chart, create_elec_prod_heatmap, create_elec_prod_line_chart, create_elec_prod_pie_chart
 
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
@@ -42,6 +42,8 @@ sidebar = html.Div(
                 dbc.NavLink("Line Chart", href="/elec-prod-line", active="exact"),
                 dbc.NavLink("Bar Chart", href="/elec-prod-bar", active="exact"),
                 dbc.NavLink("Pie Chart", href="/elec-prod-pie", active="exact"),
+                dbc.NavLink("Heatmap", href="/heatmap", active="exact"),
+
             ],
             vertical=True,
             pills=True,
@@ -89,6 +91,8 @@ def display_page(pathname, start_date, end_date):
         return create_elec_prod_bar_chart(start_date, end_date)
     elif pathname == '/elec-prod-pie':
         return create_elec_prod_pie_chart(start_date, end_date)
+    elif pathname == '/heatmap':
+        return create_elec_prod_heatmap(start_date, end_date)
     else:
         return create_elec_prod_bar_chart(start_date, end_date)
 if __name__ == '__main__':
