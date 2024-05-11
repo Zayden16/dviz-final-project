@@ -42,8 +42,8 @@ sidebar = html.Div(
                 dbc.NavLink("Line Chart", href="/elec-prod-line", active="exact"),
                 dbc.NavLink("Bar Chart", href="/elec-prod-bar", active="exact"),
                 dbc.NavLink("Pie Chart", href="/elec-prod-pie", active="exact"),
-                dbc.NavLink("Heatmap", href="/heatmap", active="exact"),
-                dbc.NavLink("Treemap", href="/treemap", active="exact"),
+                dbc.NavLink("Heatmap", href="/elec-prod-heatmap", active="exact"),
+                dbc.NavLink("Treemap", href="/elec-prod-treemap", active="exact"),
             ],
             vertical=True,
             pills=True,
@@ -73,11 +73,37 @@ date_pickers = html.Div([
     )
 ], style={'display': 'flex', 'align-items': 'center', 'padding': '5px', 'margin-bottom': '15px'}, id="date-picker-container")
 
+treemap_options = html.Div(
+    [
+        dcc.Checklist(
+            id="energy-source-selector",
+            options=[
+                {"label": "Include Water", "value": "water"},
+                {"label": "Include Solar", "value": "solar"},
+                {"label": "Include Wind", "value": "wind"},
+                {"label": "Include Biomass", "value": "biomass"},
+                {"label": "Include Waste", "value": "waste"},
+            ],
+            value=["solar", "wind", "biomass", "waste"],
+            style={"margin": "-60px 0px 20px 80px", "z-index": "1000", "position": "relative"},
+        ),
+        dcc.Checklist(
+            id="per-capita-toggle",
+            options=[{"label": "Show per capita values", "value": "per_capita"}],
+            value=["per_capita"],
+            style={"margin": "10px 0px 20px 80px", "z-index": "1000", "position": "relative"},
+        ),
+    ],
+    style={"display": "none"},
+    id="treemap-content"
+)
+
 content = html.Div(
     [
         date_pickers,
         html.Div(id="page-content", style=CONTENT_STYLE),
         html.Div(id="conditional-content"),
+        treemap_options
     ],
     style=CONTENT_STYLE
 )
@@ -88,40 +114,18 @@ app.layout = html.Div([dcc.Location(id="url"), sidebar, content], style=MAIN_LAY
     Input("url", "pathname")
 )
 def toggle_date_pickers_visibility(pathname):
-    if pathname == "/treemap":
+    if pathname == "/elec-prod-treemap":
         return {"display": "none"}
     return {'display': 'flex', 'align-items': 'center', 'padding': '5px', 'margin-bottom': '15px'}
 
 @app.callback(
-    Output("conditional-content", "children"),
+    Output("treemap-content", "style"),
     Input("url", "pathname")
 )
-def update_conditional_content(pathname):
-    if pathname == '/treemap':
-        return html.Div(
-            [
-                dcc.Checklist(
-                    id="energy-source-selector",
-                    options=[
-                        {"label": "Include Water", "value": "water"},
-                        {"label": "Include Solar", "value": "solar"},
-                        {"label": "Include Wind", "value": "wind"},
-                        {"label": "Include Biomass", "value": "biomass"},
-                        {"label": "Include Waste", "value": "waste"},
-                    ],
-                    value=["solar", "wind", "biomass", "waste"],
-                    style={"margin": "-60px 0px 20px 80px", "z-index": "1000", "position": "relative"},
-                ),
-                dcc.Checklist(
-                    id="per-capita-toggle",
-                    options=[{"label": "Show per capita values", "value": "per_capita"}],
-                    value=["per_capita"],
-                    style={"margin": "10px 0px 20px 80px", "z-index": "1000", "position": "relative"},
-                ),
-            ],
-            style={"textAlign": "left"}
-        )
-    return None
+def toggle_treemap_options_visibility(pathname):
+    if pathname == "/elec-prod-treemap":
+        return {"display": "block"}
+    return {"display": "none"}
 
 @app.callback(
     Output("page-content", "children"),
@@ -140,9 +144,9 @@ def display_page(pathname, start_date, end_date, selected_sources, per_capita_va
         return create_elec_prod_bar_chart(start_date, end_date)
     elif pathname == '/elec-prod-pie':
         return create_elec_prod_pie_chart(start_date, end_date)
-    elif pathname == '/heatmap':
+    elif pathname == '/elec-prod-heatmap':
         return create_elec_prod_heatmap(start_date, end_date)
-    elif pathname == '/treemap':
+    elif pathname == '/elec-prod-treemap':
         return create_energy_treemap(selected_sources, 'per_capita' in per_capita_values)
     return create_elec_prod_bar_chart(start_date, end_date)
 
