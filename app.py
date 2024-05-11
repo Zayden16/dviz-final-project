@@ -7,6 +7,7 @@ from dash import Dash, html, dcc, Input, Output, callback
 from charts import create_elec_prod_bar_chart, create_elec_prod_line_chart, create_elec_prod_pie_chart, create_elec_prod_heatmap, create_energy_treemap
 
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+server = app.server
 app.title = 'Energy Production in Switzerland'
 
 today = date.today()
