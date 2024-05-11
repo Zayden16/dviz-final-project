@@ -85,14 +85,22 @@ treemap_options = html.Div(
                 {"label": "Include Waste", "value": "waste"},
             ],
             value=["solar", "wind", "biomass", "waste"],
-            style={"margin": "-60px 0px 20px 80px", "z-index": "1000", "position": "relative"},
         ),
         dcc.Checklist(
             id="per-capita-toggle",
             options=[{"label": "Show per capita values", "value": "per_capita"}],
             value=["per_capita"],
-            style={"margin": "10px 0px 20px 80px", "z-index": "1000", "position": "relative"},
         ),
+        html.Div([
+            html.P("Visualization of Switzerland's 2022 Renewable Energy Production", className="h4"),
+            html.P("This interactive visualization provides insights into the renewable energy production per capita across Swiss cantons for the year 2022."),
+            html.Ul([
+                html.Li("Water Energy: Disabled by default to enhance the visibility of other energy sources due to its disproportionate scale."),
+                html.Li("Interactive Controls: Users can select between different energy sources to visualize. This includes solar, wind, biomass, and waste."),
+                html.Li("Per Capita Calculation: Toggle to view energy production per capita, providing a relative scale of production based on population."),
+                html.Li("Comparative Analysis: Easily compare different sources by toggling them on or off in the visualization.")
+            ])
+        ], style={"padding": "20px", "border-top": "1px solid #ccc", "margin-top": "20px"}),
     ],
     style={"display": "none"},
     id="treemap-content"
