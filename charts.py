@@ -32,12 +32,12 @@ def create_elec_prod_pie_chart(start_date, end_date):
     df = get_public_power(start_date, end_date,
                           ['Nuclear', 'Hydro Run-of-River', 'Hydro water reservoir', 'Hydro pumped storage',
                            'Wind onshore', 'Solar'])
-    df = df[df['Production Type'] != 'Load']
     df_sum = df.groupby('Production Type')['Power (MW)'].sum().reset_index()
-    fig = px.pie(df_sum, values='Power (MW)', names='Production Type', color_discrete_map=color_map,
+    fig = px.pie(df_sum, values='Power (MW)', names='Production Type', color='Production Type', color_discrete_map=color_map,
                  title='Pie Chart: Total Energy Production by Type',
                  labels={'Production Type': 'Production Type', 'Power (MW)': 'Total Power in MW'})
     return dcc.Graph(figure=fig, style={'width': '100%'})
+
 
 
 def create_elec_prod_heatmap(start_date, end_date):
@@ -69,8 +69,8 @@ def create_energy_treemap(selected_sources, per_capita):
         values="MWh", color="source",
         title=f'{"Per Capita" if per_capita else "Total"} Renewable Energy Production by Source and Canton in Switzerland, 2022',
         hover_data={"MWh": ":.2f"},
-        color_discrete_map={"water": "lightblue", "solar": "FEE831", "wind": "51E8C0", "biomass": "B6E880",
-                            "waste": "FF94B2"}
+        color_discrete_map={'(?)':'lightgrey', "water": "#19D3F3", "solar": "#FFA15A", "wind": "#00CC96", "biomass": "#B6E880",
+                            "waste": "#FF94B2"}
     )
     fig.update_traces(marker=dict(cornerradius=4))
     return dcc.Graph(figure=fig)

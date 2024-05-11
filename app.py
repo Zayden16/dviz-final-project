@@ -144,7 +144,7 @@ def display_page(pathname, start_date, end_date, selected_sources, per_capita_va
         return create_elec_prod_heatmap(start_date, end_date)
     elif pathname == '/treemap':
         return create_energy_treemap(selected_sources, 'per_capita' in per_capita_values)
-    return create_elec_prod_bar_chart(start_date, end_date)  # Default case
+    return create_elec_prod_bar_chart(start_date, end_date)
 
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)))
