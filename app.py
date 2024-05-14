@@ -5,8 +5,10 @@ import plotly.express as px
 import pandas as pd
 import json
 from data import get_energyreporter_data
+import dash_bootstrap_components as dbc
 
-app = dash.Dash(__name__)
+
+app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 server = app.server
 
@@ -68,6 +70,7 @@ def update_charts(selected_energy_type):
         locations='canton_full',
         featureidkey="properties.name",
         color=selected_energy_type,
+        color_continuous_scale="greens",
         scope="europe",
         labels={selected_energy_type: "Production in MWh"}
     )
@@ -79,6 +82,7 @@ def update_charts(selected_energy_type):
         x=selected_energy_type,
         y='canton',
         orientation='h',
+        color_discrete_sequence=['green'],
         labels={'canton': 'Canton', selected_energy_type: selected_energy_type.replace('_', ' ').title()},
     )
     bar_fig.update_layout(
