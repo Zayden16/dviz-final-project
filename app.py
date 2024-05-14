@@ -4,7 +4,7 @@ from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 import json
-from data import get_energyreporter_data
+from data import get_energyreporter_data, get_switzerland_geojson
 import dash_bootstrap_components as dbc
 
 
@@ -12,10 +12,8 @@ app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 server = app.server
 
-with open('./switzerland.geojson') as f:
-    geojson_data = json.load(f)
-
 df = get_energyreporter_data()
+geojson = get_switzerland_geojson()
 
 canton_mapping = {
     "AG": "Aargau", "AI": "Appenzell Innerrhoden", "AR": "Appenzell Ausserrhoden",
@@ -66,7 +64,7 @@ def update_charts(selected_energy_type):
 
     map_fig = px.choropleth(
         map_data,
-        geojson=geojson_data,
+        geojson=geojson,
         locations='canton_full',
         featureidkey="properties.name",
         color=selected_energy_type,

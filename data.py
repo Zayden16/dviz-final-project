@@ -7,6 +7,11 @@ from util import base_url, country_code, process_timestamps
 
 cache = {}
 
+def get_switzerland_geojson():
+    with open('./switzerland.geojson') as f:
+        geojson_data = json.load(f)
+    return geojson_data
+
 def get_public_power(start_date, end_date, desired_types):
     """Fetch and process public power production data within the specified date range.
 
