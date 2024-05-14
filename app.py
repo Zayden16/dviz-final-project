@@ -1,162 +1,92 @@
-import os
-from datetime import datetime, date, timedelta
+import dash
+from dash import dcc, html
+from dash.dependencies import Input, Output
+import plotly.express as px
+import pandas as pd
+import json
+from data import get_energyreporter_data
 
-import dash_bootstrap_components as dbc
-from dash import Dash, html, dcc, Input, Output, callback
+app = dash.Dash(__name__)
 
-from charts import create_elec_prod_bar_chart, create_elec_prod_line_chart, create_elec_prod_pie_chart, create_elec_prod_heatmap, create_energy_treemap
-
-app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
-app.title = 'Energy Production in Switzerland'
 
-today = date.today()
-seven_days_ago = today - timedelta(days=7)
+with open('./switzerland.geojson') as f:
+    geojson_data = json.load(f)
 
-SIDEBAR_STYLE = {
-    "top": 0,
-    "left": 0,
-    "bottom": 0,
-    "width": "250px",
-    "padding": "1rem 1rem",
-    "background-color": "#f8f9fa",
+df = get_energyreporter_data()
+
+canton_mapping = {
+    "AG": "Aargau", "AI": "Appenzell Innerrhoden", "AR": "Appenzell Ausserrhoden",
+    "BE": "Bern", "BL": "Basel-Landschaft", "BS": "Basel-Stadt",
+    "FR": "Fribourg", "GE": "Genève", "GL": "Glarus", "GR": "Graubünden",
+    "JU": "Jura", "LU": "Luzern", "NE": "Neuchâtel", "NW": "Nidwalden",
+    "OW": "Obwalden", "SG": "St. Gallen", "SH": "Schaffhausen",
+    "SO": "Solothurn", "SZ": "Schwyz", "TG": "Thurgau", "TI": "Ticino",
+    "UR": "Uri", "VD": "Vaud", "VS": "Valais", "ZG": "Zug", "ZH": "Zürich"
 }
 
-CONTENT_STYLE = {
-    "flex-grow": 1,
-    "padding": "1rem 1rem",
-    "width": "100%"
+df['canton_full'] = df['canton'].map(canton_mapping)
+
+energy_types = {
+    'Total Renewable Energy': 'renelec_production_mwh_per_year',
+    'Water Production': 'renelec_production_water_mwh_per_year',
+    'Solar Production': 'renelec_production_solar_mwh_per_year',
+    'Wind Production': 'renelec_production_wind_mwh_per_year',
+    'Biomass Production': 'renelec_production_biomass_mwh_per_year',
+    'Waste Production': 'renelec_production_waste_mwh_per_year'
 }
 
-MAIN_LAYOUT_STYLE = {
-    "display": "flex",
-    "flex-direction": "row",
-    "height": "100vh",
-}
+canton_energy = df.groupby(['canton', 'canton_full'])[list(energy_types.values())].sum().reset_index()
 
-sidebar = html.Div(
-    [
-        html.P("Electricity Production in Switzerland", className="h3"),
-        dbc.Nav(
-            [
-                dbc.NavLink("Line Chart", href="/elec-prod-line", active="exact"),
-                dbc.NavLink("Bar Chart", href="/elec-prod-bar", active="exact"),
-                dbc.NavLink("Pie Chart", href="/elec-prod-pie", active="exact"),
-                dbc.NavLink("Heatmap", href="/elec-prod-heatmap", active="exact"),
-                dbc.NavLink("Treemap", href="/elec-prod-treemap", active="exact"),
-            ],
-            vertical=True,
-            pills=True,
-        ),
-    ],
-    style=SIDEBAR_STYLE,
-)
-
-date_pickers = html.Div([
-    html.Label('Start Date:'),
-    dcc.DatePickerSingle(
-        id='start-date-picker',
-        min_date_allowed=datetime(2020, 1, 1),
-        max_date_allowed=datetime.today(),
-        initial_visible_month=datetime.today(),
-        date=seven_days_ago,
-        display_format='DD.MM.YYYY'
+app.layout = html.Div([
+    html.H1("Energy Production in Switzerland"),
+    dcc.Dropdown(
+        id='energy-type-dropdown',
+        options=[{'label': key, 'value': value} for key, value in energy_types.items()],
+        value='renelec_production_mwh_per_year',
+        clearable=False
     ),
-    html.Label('End Date:'),
-    dcc.DatePickerSingle(
-        id='end-date-picker',
-        min_date_allowed=datetime(2020, 1, 1),
-        max_date_allowed=datetime.today(),
-        initial_visible_month=datetime.today(),
-        date=today,
-        display_format='DD.MM.YYYY'
+    html.Div([
+        dcc.Graph(id='bar-chart', style={'flex': '1', 'height': '80vh'}),
+        dcc.Graph(id='switzerland-map', style={'flex': '2', 'height': '80vh'})
+    ], style={'display': 'flex'})
+])
+
+@app.callback(
+    [Output('switzerland-map', 'figure'),
+     Output('bar-chart', 'figure')],
+    [Input('energy-type-dropdown', 'value')]
+)
+def update_charts(selected_energy_type):
+    map_data = canton_energy.copy()
+    map_data[selected_energy_type] = map_data[selected_energy_type].replace(0, 1e-10)
+    bar_data = canton_energy[canton_energy[selected_energy_type] > 0]
+
+    map_fig = px.choropleth(
+        map_data,
+        geojson=geojson_data,
+        locations='canton_full',
+        featureidkey="properties.name",
+        color=selected_energy_type,
+        scope="europe",
+        labels={selected_energy_type: "Production in MWh"}
     )
-], style={'display': 'flex', 'align-items': 'center', 'padding': '5px', 'margin-bottom': '15px'}, id="date-picker-container")
+    map_fig.update_geos(fitbounds="locations", visible=False)
 
-treemap_options = html.Div(
-    [
-        dcc.Checklist(
-            id="energy-source-selector",
-            options=[
-                {"label": "Include Water", "value": "water"},
-                {"label": "Include Solar", "value": "solar"},
-                {"label": "Include Wind", "value": "wind"},
-                {"label": "Include Biomass", "value": "biomass"},
-                {"label": "Include Waste", "value": "waste"},
-            ],
-            value=["solar", "wind", "biomass", "waste"],
-        ),
-        dcc.Checklist(
-            id="per-capita-toggle",
-            options=[{"label": "Show per capita values", "value": "per_capita"}],
-            value=["per_capita"],
-        ),
-        html.Div([
-            html.P("Visualization of Switzerland's 2022 Renewable Energy Production", className="h4"),
-            html.P("This interactive visualization provides insights into the renewable energy production per capita across Swiss cantons for the year 2022."),
-            html.Ul([
-                html.Li("Water Energy: Disabled by default to enhance the visibility of other energy sources due to its disproportionate scale."),
-                html.Li("Interactive Controls: Users can select between different energy sources to visualize. This includes solar, wind, biomass, and waste."),
-                html.Li("Per Capita Calculation: Toggle to view energy production per capita, providing a relative scale of production based on population."),
-                html.Li("Comparative Analysis: Easily compare different sources by toggling them on or off in the visualization.")
-            ])
-        ], style={"padding": "20px", "border-top": "1px solid #ccc", "margin-top": "20px"}),
-    ],
-    style={"display": "none"},
-    id="treemap-content"
-)
+    sorted_bar_data = bar_data.sort_values(by=selected_energy_type)
+    bar_fig = px.bar(
+        sorted_bar_data,
+        x=selected_energy_type,
+        y='canton',
+        orientation='h',
+        labels={'canton': 'Canton', selected_energy_type: selected_energy_type.replace('_', ' ').title()},
+    )
+    bar_fig.update_layout(
+        xaxis={'categoryorder': 'total descending'},
+        height=650
+    )
 
-content = html.Div(
-    [
-        date_pickers,
-        html.Div(id="page-content", style=CONTENT_STYLE),
-        html.Div(id="conditional-content"),
-        treemap_options
-    ],
-    style=CONTENT_STYLE
-)
-app.layout = html.Div([dcc.Location(id="url"), sidebar, content], style=MAIN_LAYOUT_STYLE)
-
-@app.callback(
-    Output("date-picker-container", "style"),
-    Input("url", "pathname")
-)
-def toggle_date_pickers_visibility(pathname):
-    if pathname == "/elec-prod-treemap":
-        return {"display": "none"}
-    return {'display': 'flex', 'align-items': 'center', 'padding': '5px', 'margin-bottom': '15px'}
-
-@app.callback(
-    Output("treemap-content", "style"),
-    Input("url", "pathname")
-)
-def toggle_treemap_options_visibility(pathname):
-    if pathname == "/elec-prod-treemap":
-        return {"display": "block"}
-    return {"display": "none"}
-
-@app.callback(
-    Output("page-content", "children"),
-    [
-        Input('url', 'pathname'),
-        Input('start-date-picker', 'date'),
-        Input('end-date-picker', 'date'),
-        Input('energy-source-selector', 'value'),
-        Input('per-capita-toggle', 'value')
-    ]
-)
-def display_page(pathname, start_date, end_date, selected_sources, per_capita_values):
-    if pathname == '/elec-prod-line':
-        return create_elec_prod_line_chart(start_date, end_date)
-    elif pathname == '/elec-prod-bar':
-        return create_elec_prod_bar_chart(start_date, end_date)
-    elif pathname == '/elec-prod-pie':
-        return create_elec_prod_pie_chart(start_date, end_date)
-    elif pathname == '/elec-prod-heatmap':
-        return create_elec_prod_heatmap(start_date, end_date)
-    elif pathname == '/elec-prod-treemap':
-        return create_energy_treemap(selected_sources, 'per_capita' in per_capita_values)
-    return create_elec_prod_bar_chart(start_date, end_date)
+    return map_fig, bar_fig
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)))
+    app.run_server(debug=True)
